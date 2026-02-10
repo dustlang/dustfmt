@@ -1,91 +1,92 @@
 # dustfmt
 
-dustfmt is the official formatter for DPL (Dust Programming Language).
+`dustfmt` is the official formatter for programs written in the **Dust
+Programming Language** (DPL).  It is responsible for turning a valid Dust
+source file into a canonical textual representation.  The formatter is
+deterministic and idempotent: formatting the same program repeatedly yields
+the same result.  It never changes the semantics of the program – comments
+are preserved and only whitespace is adjusted.
 
-It provides a canonical, deterministic formatting pass for Dust source code,
-ensuring that any valid DPL program has exactly one formatted representation.
+This repository provides a **Rust** implementation of `dustfmt`.  The
+formatter is written in Rust to align with the Dust compiler and uses
+the compiler's own lexer and parser to validate input before applying
+formatting.  Previous experimental versions included a Python script,
+but this version (v0.1) is entirely Rust‑based and should be used for
+production and tooling integration.
 
-dustfmt is designed to be:
-- AST-driven (never text-heuristic based)
-- Opinionated and stable (no style flags in v1)
-- Bootstrap-safe (usable by Dust tooling itself)
-- Lossless (comments preserved, semantics unchanged)
+The formatter adheres to the **v0** formatting rules outlined in the
+original `dustfmt` specification【737876738800205†L0-L55】:
 
----
+* Indentation uses **4 spaces** per block level; tabs are not emitted and
+  any existing tab characters are treated as four spaces.
+* Opening braces `{` remain on the **same line** as the construct they
+  introduce, with a space separating the name and the brace【403632972283735†L285-L293】.
+* Each syntactic item (statement, field, parameter, etc.) appears on its
+  own line【737876738800205†L46-L54】.
+* There is **no trailing whitespace** on any line.
+* A final newline is always present at the end of the file【737876738800205†L46-L54】.
 
-## Philosophy
-
-dustfmt follows the same design principles as the Dust toolchain:
-
-- Formatting is not configurable (at least initially)
-- Formatting is structural, not cosmetic
-- Formatting is idempotent
-- Formatting must never alter program meaning
-
-If two Dust programs format to the same output, they are structurally equivalent.
-
----
+These rules apply to the entire Dust language, whose syntax and lexical
+structure are defined in the DPL specification.  The specification notes
+that source files are UTF‑8 encoded text files and that comments (line
+`//` and block `/* … */`) are treated as whitespace【213087216729029†L0-L20】.  Our
+formatter recognises these constructs and preserves them while reflowing
+code.
 
 ## Usage
 
-Format a file in place:
+You can run the formatter via Rust's `cargo` or using the Python
+interpreter.  Both support formatting files in place and checking
+formatting without making changes.
 
-dustfmt file.dust
+### Rust
 
-Check formatting without modifying files:
+Format files in place:
 
-dustfmt --check file.dust
+```
+cargo run -- file1.ds file2.ds
+```
 
-Read from stdin and write to stdout:
+Check formatting (exit code 1 if formatting differs):
 
-dustfmt -
+```
+cargo run -- --check file.ds
+```
 
----
+If no file name is supplied or `-` is passed, the formatter reads from
+standard input and writes the result to standard output.
 
-## Formatting Rules (v0)
+<!--
+The Python implementation from earlier prototypes has been removed in
+v0.1.  All formatting should now be done via the Rust binary.  The
+section below is intentionally left blank to preserve anchor links in
+external documentation.
+-->
 
-- 4-space indentation
-- Tabs are forbidden
-- Braces on the same line
-- One item per line
-- No trailing whitespace
-- Final newline always present
+## Implementation notes
 
-Example:
+The formatter uses two lexers under the hood.  First, it runs the
+official Dust compiler lexer and parser (embedded in the `frontend`
+module of this crate) to parse the input into an Abstract Syntax Tree.
+If lexing or parsing fails, `dustfmt` reports a diagnostic and aborts
+without modifying the file.  This validation step ensures that
+formatting does not alter the meaning of a program and that only valid
+Dust code is processed.
 
-fn main() {
-    let x = 1
-}
+Once validated, `dustfmt` tokenises the source again with a second
+lexer that preserves comments.  It then emits a canonical form by
+walking the token stream, applying the indentation and spacing rules
+above.  Comments are preserved verbatim and appear at the same block
+indentation as the code that follows.  Invalid or unrecognised input
+produces a diagnostic on stderr and leaves the original source
+untouched.
 
----
-
-## Relationship to the DPL Specification
-
-The Dust Programming Language specification is the source of truth for syntax
-and semantics.
-
-dustfmt:
-- relies on the Dust parser to build an AST
-- formats only valid DPL programs
-- does not attempt error recovery or partial formatting
-
----
-
-## Status
-
-dustfmt is under active development.
-
-Initial versions focus on:
-- modules
-- functions
-- basic expressions
-- block structure
-- comment preservation
-
----
+Formatting in Dust is **structural rather than cosmetic** and is not
+configurable【403632972283735†L248-L263】.  The Rust version aligns with
+the rest of the Dust compiler, and this v0.1 release is intended to be
+a production‑ready formatter for the DPL v0.1 language subset.
 
 ## License
 
-This project is licensed under the Dust Open Source License (DOSL).
-
-See the LICENSE file for the full license text.
+This project is licensed under the **Dust Open Source License (DOSL)**.  See
+the `LICENSE` file for details.

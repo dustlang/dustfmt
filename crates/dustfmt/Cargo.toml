@@ -1,0 +1,11 @@
+[package]
+name = "dustfmt"
+version = "0.1.0"
+edition = "2021"
+
+description = "Formatter for the Dust Programming Language (DPL)"
+license = "DOSL-1.0"
+readme = "README.md"
+
+[dependencies]
+# This implementation intentionally avoids external crates to ease bootstrapping.

@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/dustfmt"
+]
+
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "DOSL"
+authors = ["Dust Contributors <contributors@dustlang.org>"]
+repository = "https://github.com/dustlang/dustfmt"
+homepage = "https://dustlang.org"
+rust-version = "1.75"

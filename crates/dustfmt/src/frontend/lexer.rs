@@ -33,10 +33,12 @@ pub enum Keyword {
     Forge,
     Shape,
     Proc,
+    Process,
     Bind,
     Contract,
     Uses,
     Let,
+    Mut,
     Constrain,
     Prove,
     From,
@@ -45,6 +47,39 @@ pub enum Keyword {
     Seal,
     Return,
     Linear,
+    // v0.2 control flow
+    If,
+    Else,
+    For,
+    While,
+    Break,
+    Continue,
+    In,
+    Match,
+    Loop,
+    // v0.2 K-regime memory operations
+    Alloc,
+    Free,
+    Spawn,
+    Join,
+    MutexNew,
+    MutexLock,
+    MutexUnlock,
+    Open,
+    Read,
+    Write,
+    Close,
+    IoRead,
+    IoWrite,
+    MmioRead,
+    MmioWrite,
+    Unsafe,
+    // v0.2 type system
+    Type,
+    Trait,
+    Enum,
+    Struct,
+    Impl,
     // Regimes
     K,
     Q,
@@ -61,21 +96,21 @@ pub enum Token {
     Keyword(Keyword),
 
     // Punctuation / operators
-    LBrace,     // {
-    RBrace,     // }
-    LParen,     // (
-    RParen,     // )
-    LBracket,   // [
-    RBracket,   // ]
-    Colon,      // :
-    Semi,       // ;
-    Comma,      // ,
-    Dot,        // .
-    Eq,         // =
-    Plus,       // +
-    Minus,      // -
-    Star,       // *
-    Slash,      // /
+    LBrace,   // {
+    RBrace,   // }
+    LParen,   // (
+    RParen,   // )
+    LBracket, // [
+    RBracket, // ]
+    Colon,    // :
+    Semi,     // ;
+    Comma,    // ,
+    Dot,      // .
+    Eq,       // =
+    Plus,     // +
+    Minus,    // -
+    Star,     // *
+    Slash,    // /
 
     ColonColon, // ::
     Arrow,      // ->
@@ -215,7 +250,11 @@ impl<'a> Lexer<'a> {
 
         // Fallback: unexpected character
         self.bump();
-        Err(self.err(LexErrorKind::UnexpectedChar(b as char), start, self.i as u32))
+        Err(self.err(
+            LexErrorKind::UnexpectedChar(b as char),
+            start,
+            self.i as u32,
+        ))
     }
 
     // ------------------------------------------------------------------------
@@ -233,7 +272,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn err(&self, kind: LexErrorKind, start: u32, end: u32) -> LexError {
-        LexError { kind, span: Span::new(start, end) }
+        LexError {
+            kind,
+            span: Span::new(start, end),
+        }
     }
 
     fn skip_ws_and_comments(&mut self) -> Result<(), LexError> {
@@ -258,7 +300,11 @@ impl<'a> Lexer<'a> {
                 self.bump();
                 loop {
                     if self.i >= self.len {
-                        return Err(self.err(LexErrorKind::UnterminatedBlockComment, start, self.i as u32));
+                        return Err(self.err(
+                            LexErrorKind::UnterminatedBlockComment,
+                            start,
+                            self.i as u32,
+                        ));
                     }
                     if self.peek_u8() == Some(b'*') && self.peek2_u8() == Some(b'/') {
                         self.bump();
@@ -291,7 +337,11 @@ impl<'a> Lexer<'a> {
             if (b'0'..=b'9').contains(&b) {
                 let digit = (b - b'0') as i64;
                 self.bump();
-                val = val.checked_mul(10).ok_or_else(|| self.err(LexErrorKind::IntOverflow, start, self.i as u32))?.checked_add(digit).ok_or_else(|| self.err(LexErrorKind::IntOverflow, start, self.i as u32))?;
+                val = val
+                    .checked_mul(10)
+                    .ok_or_else(|| self.err(LexErrorKind::IntOverflow, start, self.i as u32))?
+                    .checked_add(digit)
+                    .ok_or_else(|| self.err(LexErrorKind::IntOverflow, start, self.i as u32))?;
             } else {
                 break;
             }
@@ -317,7 +367,11 @@ impl<'a> Lexer<'a> {
                 '\\' => {
                     self.bump_char();
                     if self.i >= self.len {
-                        return Err(self.err(LexErrorKind::UnterminatedString, start, self.i as u32));
+                        return Err(self.err(
+                            LexErrorKind::UnterminatedString,
+                            start,
+                            self.i as u32,
+                        ));
                     }
                     let esc = self.peek_char().unwrap();
                     self.bump_char();
@@ -328,7 +382,11 @@ impl<'a> Lexer<'a> {
                         't' => out.push('\t'),
                         'r' => out.push('\r'),
                         other => {
-                            return Err(self.err(LexErrorKind::InvalidEscape(other), start, self.i as u32));
+                            return Err(self.err(
+                                LexErrorKind::InvalidEscape(other),
+                                start,
+                                self.i as u32,
+                            ));
                         }
                     }
                 }
@@ -358,13 +416,15 @@ impl<'a> Lexer<'a> {
             }
         }
         let tok = match s.as_str() {
+            // v0.1 keywords
             "forge" => Token::Keyword(Keyword::Forge),
             "shape" => Token::Keyword(Keyword::Shape),
-            "proc" => Token::Keyword(Keyword::Proc),
+            "proc" | "process" => Token::Keyword(Keyword::Proc),
             "bind" => Token::Keyword(Keyword::Bind),
             "contract" => Token::Keyword(Keyword::Contract),
             "uses" => Token::Keyword(Keyword::Uses),
             "let" => Token::Keyword(Keyword::Let),
+            "mut" => Token::Keyword(Keyword::Mut),
             "constrain" => Token::Keyword(Keyword::Constrain),
             "prove" => Token::Keyword(Keyword::Prove),
             "from" => Token::Keyword(Keyword::From),
@@ -373,6 +433,40 @@ impl<'a> Lexer<'a> {
             "seal" => Token::Keyword(Keyword::Seal),
             "return" => Token::Keyword(Keyword::Return),
             "linear" => Token::Keyword(Keyword::Linear),
+            // v0.2 control flow
+            "if" => Token::Keyword(Keyword::If),
+            "else" => Token::Keyword(Keyword::Else),
+            "for" => Token::Keyword(Keyword::For),
+            "while" => Token::Keyword(Keyword::While),
+            "break" => Token::Keyword(Keyword::Break),
+            "continue" => Token::Keyword(Keyword::Continue),
+            "in" => Token::Keyword(Keyword::In),
+            "match" => Token::Keyword(Keyword::Match),
+            "loop" => Token::Keyword(Keyword::Loop),
+            // v0.2 K-regime memory operations
+            "alloc" => Token::Keyword(Keyword::Alloc),
+            "free" => Token::Keyword(Keyword::Free),
+            "spawn" => Token::Keyword(Keyword::Spawn),
+            "join" => Token::Keyword(Keyword::Join),
+            "mutex_new" => Token::Keyword(Keyword::MutexNew),
+            "mutex_lock" => Token::Keyword(Keyword::MutexLock),
+            "mutex_unlock" => Token::Keyword(Keyword::MutexUnlock),
+            "open" => Token::Keyword(Keyword::Open),
+            "read" => Token::Keyword(Keyword::Read),
+            "write" => Token::Keyword(Keyword::Write),
+            "close" => Token::Keyword(Keyword::Close),
+            "io_read" => Token::Keyword(Keyword::IoRead),
+            "io_write" => Token::Keyword(Keyword::IoWrite),
+            "mmio_read" => Token::Keyword(Keyword::MmioRead),
+            "mmio_write" => Token::Keyword(Keyword::MmioWrite),
+            "unsafe" => Token::Keyword(Keyword::Unsafe),
+            // v0.2 type system
+            "type" => Token::Keyword(Keyword::Type),
+            "trait" => Token::Keyword(Keyword::Trait),
+            "enum" => Token::Keyword(Keyword::Enum),
+            "struct" => Token::Keyword(Keyword::Struct),
+            "impl" => Token::Keyword(Keyword::Impl),
+            // Regimes
             "K" => Token::Keyword(Keyword::K),
             "Q" => Token::Keyword(Keyword::Q),
             // Boolean literals

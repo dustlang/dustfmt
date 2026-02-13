@@ -49,7 +49,10 @@ struct Lexer {
 
 impl Lexer {
     fn new(s: &str) -> Self {
-        Self { input: s.chars().collect(), pos: 0 }
+        Self {
+            input: s.chars().collect(),
+            pos: 0,
+        }
     }
 
     fn peek(&self, n: usize) -> Option<&[char]> {
@@ -92,7 +95,9 @@ impl Lexer {
                         let start = self.pos;
                         self.advance(2);
                         while let Some(&c) = self.input.get(self.pos) {
-                            if c == '\n' { break; }
+                            if c == '\n' {
+                                break;
+                            }
                             self.advance(1);
                         }
                         let comment: String = self.input[start..self.pos].iter().collect();
@@ -146,36 +151,70 @@ impl Lexer {
             // Multi‑char operators
             if let Some(peek2) = self.peek(2) {
                 let two: String = peek2.iter().collect();
-                if ["::", "->", "==", "<=", ">=", "&&", "||"].contains(&two.as_str()) {
+                if ["::", "->", "==", "<=", ">=", "&&", "||", "..", "=>"].contains(&two.as_str()) {
                     self.advance(2);
                     tokens.push(Token::Op(two));
                     continue;
                 }
             }
-            // Single char operators
-            if ['+', '-', '*', '/', '<', '>', '='].contains(&ch) {
+            // Single char operators (v0.2 addition: !)
+            if ['+', '-', '*', '/', '<', '>', '=', '!'].contains(&ch) {
                 self.advance(1);
                 tokens.push(Token::Op(ch.to_string()));
                 continue;
             }
             // Delimiters
-            if ['{', '}', '(', ')', '[', ']', ',', ';', ':', '.'].contains(&ch) {
+            if ['{', '}', '(', ')', '[', ']', ',', ';', ':'].contains(&ch) {
                 self.advance(1);
                 tokens.push(Token::Delim(ch));
                 continue;
             }
-            // Number
+            // Number (integer or float)
             if ch.is_ascii_digit() {
                 let start = self.pos;
+                let mut has_dot = false;
+                // Read integer part
                 while let Some(&c) = self.input.get(self.pos) {
                     if c.is_ascii_digit() {
                         self.advance(1);
+                    } else if c == '.' && !has_dot {
+                        // Check if it's a float
+                        if let Some(&next) = self.input.get(self.pos + 1) {
+                            if next.is_ascii_digit() {
+                                has_dot = true;
+                                self.advance(1); // consume '.'
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     } else {
                         break;
                     }
                 }
                 let num: String = self.input[start..self.pos].iter().collect();
                 tokens.push(Token::Number(num));
+                continue;
+            }
+            // Char literal ('a')
+            if ch == '\'' {
+                let start = self.pos;
+                self.advance(1); // consume opening '
+                let mut ch_val = '\0';
+                if let Some(&c) = self.input.get(self.pos) {
+                    if c != '\'' {
+                        ch_val = c;
+                        self.advance(1);
+                    }
+                }
+                // consume closing '
+                if let Some(&c) = self.input.get(self.pos) {
+                    if c == '\'' {
+                        self.advance(1);
+                    }
+                }
+                tokens.push(Token::Number(format!("'{}'", ch_val)));
                 continue;
             }
             // Identifier / keyword / regime / bool
@@ -191,10 +230,24 @@ impl Lexer {
                 }
                 let ident: String = self.input[start..self.pos].iter().collect();
                 match ident.as_str() {
-                    // keywords list
-                    "forge" | "shape" | "proc" | "bind" | "contract" | "uses" |
-                    "let" | "constrain" | "prove" | "from" | "observe" | "emit" |
-                    "seal" | "return" | "linear" => tokens.push(Token::Keyword(ident)),
+                    // v0.1 keywords
+                    "forge" | "shape" | "proc" | "process" | "bind" | "contract" | "uses"
+                    | "constrain" | "prove" | "from" | "observe" | "emit" | "seal"
+                    | "return" | "linear" => tokens.push(Token::Keyword(ident)),
+                    // v0.2 keywords - K-regime memory operations
+                    "alloc" | "free" | "spawn" | "join" | "mutex_new" | "mutex_lock" 
+                    | "mutex_unlock" | "open" | "read" | "write" | "close"
+                    | "io_read" | "io_write" | "mmio_read" | "mmio_write" | "unsafe"
+                    // v0.2 control flow
+                    | "if" | "else" | "for" | "while" | "break" | "continue" | "in" | "match"
+                    // v0.2 variable bindings
+                    | "let" | "mut" | "where" | "loop" | "pub" | "mod" | "use" | "as"
+                    // v0.2 type system
+                    | "type" | "trait" | "enum" | "struct" | "impl" | "self" | "Self"
+                    // v0.2 constraints
+                    | "requires" | "ensures" | "invariant" | "assert" | "assume" | "ghost"
+                    // v0.2 effects
+                    | "effect" | "handler" | "do" | "try" | "catch" | "throw" => tokens.push(Token::Keyword(ident)),
                     "K" | "Q" | "Φ" => tokens.push(Token::Regime(ident)),
                     "true" | "false" => tokens.push(Token::BoolLit(ident)),
                     _ => tokens.push(Token::Ident(ident)),
@@ -216,15 +269,16 @@ fn format_tokens(tokens: &[Token]) -> String {
     let mut indent_level: usize = 0;
     let mut newline_pending = false;
     let mut prev: Option<&Token> = None;
-    let mut flush_line = |current: &mut String, result: &mut Vec<String>, newline_pending: &mut bool| {
-        if !current.is_empty() {
-            // remove trailing whitespace
-            let trimmed = current.trim_end().to_string();
-            result.push(trimmed);
-            current.clear();
-        }
-        *newline_pending = false;
-    };
+    let mut flush_line =
+        |current: &mut String, result: &mut Vec<String>, newline_pending: &mut bool| {
+            if !current.is_empty() {
+                // remove trailing whitespace
+                let trimmed = current.trim_end().to_string();
+                result.push(trimmed);
+                current.clear();
+            }
+            *newline_pending = false;
+        };
 
     for tok in tokens {
         match tok {
@@ -279,7 +333,9 @@ fn format_tokens(tokens: &[Token]) -> String {
             }
             Token::Delim('}') => {
                 flush_line(&mut current, &mut result, &mut newline_pending);
-                if indent_level > 0 { indent_level -= 1; }
+                if indent_level > 0 {
+                    indent_level -= 1;
+                }
                 let indent = " ".repeat(indent_level * 4);
                 result.push(format!("{}{}", indent, '}'));
                 newline_pending = true;
@@ -308,18 +364,36 @@ fn format_tokens(tokens: &[Token]) -> String {
             let mut ns = false;
             if let Some(prev_tok) = prev {
                 match tok {
-                    Token::Delim(',') | Token::Delim(':') | Token::Delim(')') | Token::Delim(']') | Token::Delim('.') | Token::Op(op) if op == "::" => {
+                    Token::Delim(',')
+                    | Token::Delim(':')
+                    | Token::Delim(')')
+                    | Token::Delim(']')
+                    | Token::Delim('.') => {
                         ns = false;
+                    }
+                    Token::Op(op) => {
+                        if op == "::" {
+                            ns = false;
+                        } else {
+                            ns = true;
+                        }
                     }
                     Token::Delim('(') => {
                         ns = false;
                     }
-                    _ => {
-                        match prev_tok {
-                            Token::Delim('(') | Token::Delim('[') | Token::Op(op) if op == "::" => ns = false,
-                            _ => ns = true,
+                    _ => match prev_tok {
+                        Token::Delim('(') | Token::Delim('[') => {
+                            ns = false;
                         }
-                    }
+                        Token::Op(prev_op) => {
+                            if prev_op == "::" {
+                                ns = false;
+                            } else {
+                                ns = true;
+                            }
+                        }
+                        _ => ns = true,
+                    },
                 }
             }
             ns
@@ -329,7 +403,10 @@ fn format_tokens(tokens: &[Token]) -> String {
         }
         match tok {
             Token::Delim(',') | Token::Delim(':') => {
-                current.push(match tok { Token::Delim(c) => *c, _ => unreachable!() });
+                current.push(match tok {
+                    Token::Delim(c) => *c,
+                    _ => unreachable!(),
+                });
                 current.push(' ');
             }
             Token::Delim(c) => {
@@ -387,7 +464,10 @@ pub fn format_source(src: &str) -> Result<String, String> {
             }
         }
         Err(e) => {
-            return Err(format!("lex error: {:?} at {}..{}", e.kind, e.span.start, e.span.end));
+            return Err(format!(
+                "lex error: {:?} at {}..{}",
+                e.kind, e.span.start, e.span.end
+            ));
         }
     }
     // Use the formatter's lexer to produce a token stream with comments.
@@ -411,11 +491,15 @@ fn main() {
     if files.is_empty() {
         // read from stdin
         let mut buf = String::new();
-        io::stdin().read_to_string(&mut buf).expect("Failed to read from stdin");
+        io::stdin()
+            .read_to_string(&mut buf)
+            .expect("Failed to read from stdin");
         match format_source(&buf) {
             Ok(formatted) => {
                 if check_only {
-                    if formatted != buf { std::process::exit(1); }
+                    if formatted != buf {
+                        std::process::exit(1);
+                    }
                 } else {
                     print!("{}", formatted);
                 }
@@ -458,6 +542,8 @@ fn main() {
                 }
             }
         }
-        if exit_code != 0 { std::process::exit(exit_code); }
+        if exit_code != 0 {
+            std::process::exit(exit_code);
+        }
     }
 }

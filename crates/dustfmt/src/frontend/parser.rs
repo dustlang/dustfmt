@@ -23,7 +23,11 @@ pub struct ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} at {}..{}", self.message, self.span.start, self.span.end)
+        write!(
+            f,
+            "{} at {}..{}",
+            self.message, self.span.start, self.span.end
+        )
     }
 }
 
@@ -69,7 +73,9 @@ impl Parser {
                     forges.push(self.parse_forge()?);
                 }
                 // Top-level shorthand proc: K/Q/Φ main { ... }
-                Token::Keyword(Keyword::K) | Token::Keyword(Keyword::Q) | Token::Keyword(Keyword::Phi) => {
+                Token::Keyword(Keyword::K)
+                | Token::Keyword(Keyword::Q)
+                | Token::Keyword(Keyword::Phi) => {
                     let p = self.parse_proc_shorthand()?;
                     if root_start.is_none() {
                         root_start = Some(p.span.start);
@@ -108,7 +114,10 @@ impl Parser {
             items.push(self.parse_item()?);
         }
         let end = self.expect(Token::RBrace)?.span.end;
-        Ok(Spanned::new(ForgeDecl { name, items }, Span::new(start, end)))
+        Ok(Spanned::new(
+            ForgeDecl { name, items },
+            Span::new(start, end),
+        ))
     }
 
     fn parse_item(&mut self) -> Result<Spanned<Item>, ParseError> {
@@ -117,8 +126,32 @@ impl Parser {
                 let p = self.parse_proc()?;
                 Ok(Spanned::new(Item::Proc(p.node), p.span))
             }
-            Token::Keyword(Keyword::Shape) => Err(self.err_here("`shape` is not supported by this parser build")),
-            Token::Keyword(Keyword::Bind) => Err(self.err_here("`bind` is not supported by this parser build")),
+            Token::Keyword(Keyword::Shape) => {
+                Err(self.err_here("`shape` is not supported by this parser build"))
+            }
+            Token::Keyword(Keyword::Bind) => {
+                Err(self.err_here("`bind` is not supported by this parser build"))
+            }
+            Token::Keyword(Keyword::Unsafe) => {
+                Err(self.err_here("`unsafe` blocks require extended parser"))
+            }
+            Token::Keyword(Keyword::Alloc)
+            | Token::Keyword(Keyword::Free)
+            | Token::Keyword(Keyword::Spawn)
+            | Token::Keyword(Keyword::Join)
+            | Token::Keyword(Keyword::MutexNew)
+            | Token::Keyword(Keyword::MutexLock)
+            | Token::Keyword(Keyword::MutexUnlock)
+            | Token::Keyword(Keyword::Open)
+            | Token::Keyword(Keyword::Read)
+            | Token::Keyword(Keyword::Write)
+            | Token::Keyword(Keyword::Close)
+            | Token::Keyword(Keyword::IoRead)
+            | Token::Keyword(Keyword::IoWrite)
+            | Token::Keyword(Keyword::MmioRead)
+            | Token::Keyword(Keyword::MmioWrite) => {
+                Err(self.err_here("K-regime memory operations require extended parser"))
+            }
             _ => Err(self.err_here("expected forge item (`proc`)")),
         }
     }
@@ -134,10 +167,7 @@ impl Parser {
         let start = regime.span.start;
         let body = self.parse_block()?;
         let end = body.span.end;
-        let path = Spanned::new(
-            ProcPath { regime, name },
-            Span::new(start, end),
-        );
+        let path = Spanned::new(ProcPath { regime, name }, Span::new(start, end));
         let sig = Spanned::new(
             ProcSig {
                 path,

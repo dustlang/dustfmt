@@ -1,8 +1,13 @@
-// dustfmt – official formatter for DPL (Dust Programming Language).
-//
-// This module provides the lexer for the formatter. It yields a vector of
-// tokens for a given input string. Lexical rules are derived from the
-// DPL specification.
+// File: lexer.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Dustfmt lexer - tokenizes Dust source for formatting.
+//   Provides Token enum with:
+//     - Newline, Comment, BlockComment
+//     - Ident, Keyword, Regime
+//     - Number, BoolLit, StringLit
+//     - Op, Delim
+//   Lexical rules derived from DPL specification.
 
 /// Token kinds recognised by the formatter's lexer.
 #[derive(Debug, Clone)]

@@ -1,3 +1,12 @@
+// File: format.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Test suite for dustfmt formatter.
+//   Tests include:
+//     - simple_forge: Basic forge formatting
+//     - Various formatting scenarios
+//   Uses dustfmt::format_source for testing.
+
 use std::fs;
 
 // Import the public formatter function from the crate root.

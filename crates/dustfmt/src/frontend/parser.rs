@@ -1,15 +1,12 @@
-// crates/dust_frontend/src/parser.rs
-//
-// This parser is adapted from the Dust compiler frontend to live in
-// `dustfmt`.  It parses a sequence of lexed tokens into an AST defined
-// in `frontend::ast`.  Only a subset of DPL constructs are currently
-// supported (forge declarations with K/Q/Φ processes and simple
-// `emit` statements), reflecting the state of the upstream compiler at
-// v0.1.  When encountering unsupported language features the parser
-// returns an error with a descriptive message and span.  Downstream
-// tooling may use the parsed AST for semantic checking or, in the case
-// of `dustfmt`, to validate that formatting will not change program
-// meaning.
+// File: parser.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Dust compiler parser adapted for dustfmt.
+//   Parses tokens into AST (frontend::ast).
+//   Supports subset of DPL v0.1: forge declarations with K/Q/Φ processes
+//   and simple emit statements. Returns errors with descriptive messages
+//   and spans for unsupported features. Used for semantic validation
+//   before formatting.
 
 use crate::frontend::ast::*;
 use crate::frontend::lexer::{Keyword, Token};

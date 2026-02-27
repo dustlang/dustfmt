@@ -1,6 +1,12 @@
-// dustfmt – formatter module
-//
-// This module formats a sequence of tokens into canonical Dust source.
+// File: format.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Dustfmt formatter module - formats tokens into canonical Dust source.
+//   Provides:
+//     - format_tokens(): Convert token sequence to formatted source
+//     - Indentation management
+//     - Newline handling
+//     - Whitespace trimming
 
 use crate::lexer::Token;
 

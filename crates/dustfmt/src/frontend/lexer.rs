@@ -1,15 +1,11 @@
-// crates/dust_frontend/src/lexer.rs
-//
-// This file contains the Dust compiler's lexical analyser adapted for
-// inclusion in the `dustfmt` crate.  The lexer tokenises Dust source
-// according to the v0.1 language specification.  See the DPL spec for
-// details on comments, whitespace and operators.
-//
-// The implementation is copied from `dustlang/dust` and adjusted to
-// reference types from this crate (i.e. `frontend::ast`) rather than the
-// original crate.  It intentionally skips comments as whitespace so
-// that the parser can operate on a clean token stream.  `dustfmt` uses
-// a separate lexer when formatting in order to preserve comments.
+// File: lexer.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Dust compiler's lexical analyser adapted for dustfmt.
+//   Tokenizes Dust source according to v0.1 language specification.
+//   Derived from dustlang/dust, adjusted to use frontend::ast types.
+//   Skips comments as whitespace for parser; dustfmt uses separate
+//   lexer to preserve comments during formatting.
 
 use crate::frontend::ast::{Span, Spanned};
 

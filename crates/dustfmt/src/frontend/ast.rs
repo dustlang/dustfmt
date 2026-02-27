@@ -1,9 +1,10 @@
-// crates/dust_frontend/src/ast.rs
-//
-// This file is a verbatim copy of the Dust compiler's AST definition
-// (v0.1) from `dustlang/dust`.  It defines the types used to represent
-// parsed Dust programs.  Only minor formatting changes have been applied
-// to satisfy clippy and compiler lints in this crate.
+// File: ast.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Verbatim copy of Dust compiler's AST definition (v0.1).
+//   Defines types for representing parsed Dust programs.
+//   Adapted from dustlang/dust with minor formatting changes
+//   to satisfy clippy and compiler lints.
 
 use std::fmt;
 

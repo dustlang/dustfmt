@@ -1,15 +1,13 @@
-// dustfmt – official formatter for DPL (Dust Programming Language).
-//
-// This Rust implementation follows the same formatting rules outlined in the
-// project README.  It scans the input text into a sequence of tokens, then
-// rebuilds the source code in a canonical form.  Comments are preserved,
-// indentation uses four spaces, braces remain on the same line, each
-// syntactic item resides on its own line, trailing whitespace is removed,
-// and a final newline is ensured.
-//
-// Because this tool is intended to be bootstrapped alongside the Dust
-// compiler, it deliberately avoids external dependencies beyond the Rust
-// standard library.
+// File: main.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   dustfmt – official formatter for DPL (Dust Programming Language).
+//   This Rust implementation:
+//     - Scans input text into tokens, rebuilds in canonical form
+//     - Preserves comments, 4-space indentation, brace placement
+//     - Each syntactic item on its own line
+//     - Removes trailing whitespace, ensures final newline
+//   NOTE: Deliberately avoids external dependencies for bootstrapping.
 
 use std::env;
 use std::fs;

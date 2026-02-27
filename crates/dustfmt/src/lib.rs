@@ -1,7 +1,12 @@
-// dustfmt library - public API for the Dust formatter
-//
-// This module re-exports the formatter functions from the binary crate
-// so that integration tests can use them.
+// File: lib.rs - This file is part of the DPL Toolchain
+// Copyright (c) 2026 Dust LLC, and Contributors
+// Description:
+//   Dustfmt library - public API for the Dust formatter.
+//   This module:
+//     - Re-exports formatter functions for integration tests
+//     - Provides format_source() entry point
+//     - Uses compiler frontend for validation
+//     - Runs formatter on separate lexer for idempotence
 
 mod frontend;
 use frontend::lexer as comp_lexer;

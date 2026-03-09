@@ -5,6 +5,15 @@ All notable changes to dustfmt are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-03-09
+
+### Changed
+
+- Migrated `dustfmt` from Rust crate layout to Dust-native workspace layout.
+- Replaced `Cargo.toml` + `Cargo.lock` + `crates/dustfmt` with `State.toml` + `src/main.ds`.
+- Collapsed runtime build profile to compiler-compatible single-file top-level grammar (`K main`).
+- Updated CI and repository documentation to reflect the Dust-native structure.
+
 ## [0.2.0] - 2026-02-12 (DPL v0.2)
 
 ### Added
@@ -49,4 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-Copyright © 2026 Dust LLC
+Copyright (c) 2026 Dust LLC

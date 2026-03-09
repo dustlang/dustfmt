@@ -1,0 +1,14 @@
+# DustFmt - DPL Formatter Workspace Manifest
+
+[workspace]
+name = "dustfmt"
+version = "0.2.0"
+description = "Dust-native formatter profile"
+
+[sector]
+name = "dustfmt"
+path = "src"
+
+[target.x64-pc-none]
+linker = "ld"
+linker_flags = ["-nostdlib", "-static"]

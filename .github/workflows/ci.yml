@@ -2,21 +2,24 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   pull_request:
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
+      - name: Verify Dust workspace layout
+        run: |
+          test -f State.toml
+          test -f src/main.ds
 
-      - name: Build
-        run: cargo build --workspace --verbose
-      - name: Test
-        run: cargo test --workspace --verbose
+      - name: Verify Rust crate files were retired
+        run: |
+          if find . -name '*.rs' -o -name 'Cargo.toml' -o -name 'Cargo.lock' | grep -q .; then
+            echo "Found retired Rust crate artifacts in dustfmt"
+            exit 1
+          fi
